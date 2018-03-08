@@ -92,3 +92,103 @@ contract AddorSearch{
 
     
 }
+
+
+
+///////////////////////////////////////
+
+//  一个简单的交易合约
+contract coin{
+    struct Administrators{
+        address ownerAdr;
+        string ownerName;
+        bytes32 password;
+        uint balances;
+    }
+
+    address public owner;
+    uint AdministratorsNum = 0;
+    address[] addrList;
+    mapping(string=>bool) registerPool;
+    mapping(string => Administrators) userPool;
+
+
+     function Register() public {
+        owner = msg.sender;
+    }
+
+    //注册
+     function login(string username, string password) constant public returns (bool) {
+        return userPool[username].password == keccak256(password);
+    }
+    //注册检测
+    function checkRegister(address addr,string username) constant public returns (bool) {
+
+		for(uint i = 0; i < addrList.length; ++i){
+            if(addrList[i] == addr||registerPool[username]==true)
+                return true;
+		}
+        return false;
+    }
+
+	// 用户注册
+    function register(address addr, string  username, string password,uint balances) public {
+        require(!(msg.sender!=owner));
+        require(!checkRegister(addr,username));
+		userPool[username] = Administrators(addr, username, keccak256(password),balances);
+		addrList.push(addr);
+		registerPool[username]=true;
+		++AdministratorsNum;
+    }
+    // 更新密码
+    function updatePassword(string username, string newPwd) public {
+		require(msg.sender != owner);
+        // keccak256加密
+		userPool[username].password = keccak256(newPwd);
+    }
+
+    function addMsg(string senderName,string receiverName,string ID,uint amount) public{
+
+        violateRecords.push(Msg(senderName,receiverName,ID,amount));
+    }
+
+    // 交易
+    function trade(string senderName,string receiverName,string ID,uint amount){
+         if (userPool[senderName].balances < amount) return;
+         userPool[senderName].balances -= amount;
+         userPool[receiverName].balances += amount;
+         addMsg(senderName,receiverName,ID,amount);
+    }
+
+	function getBalances(string ownerName) constant public returns(uint){
+		return userPool[ownerName].balances;
+	}
+
+	//
+	struct Msg{
+    string senderName;
+	string receiverName;
+    string ID;
+    uint amount;
+    }
+    Msg[] violateRecords;
+    uint totalMsg=0;
+
+
+    function returnTotal() constant public returns (uint) {
+        return violateRecords.length;
+    }
+    function getSenderName(uint id) constant public returns (string){
+       return violateRecords[id].senderName;
+    }
+    function getID(uint id) constant public returns (string){
+        return violateRecords[id].ID;
+    }
+    function getReceiverName(uint id) constant public returns (string){
+        return violateRecords[id].receiverName;
+    }
+    function getAmount(uint id) constant public returns (uint){
+        return violateRecords[id].amount;
+    }
+
+}
